@@ -1,0 +1,91 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  default-python-version: 3.8
+
+jobs:
+
+  lint:
+
+    name: Project Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@master
+
+      - name: Setup Python ${{ env.default-python-version }}
+        uses: actions/setup-python@v4.5.0
+        with:
+          python-version: ${{ env.default-python-version }}
+
+      - name: Install PipEnv
+        run: |
+          pip install pipenv==2022.1.8
+
+      - name: Sync With Repository
+        run: |
+          pipenv lock
+          pipenv sync
+
+      - name: Execute Black
+        run: |
+          pipenv run black .
+
+      - name: Execute ISort
+        run: |
+          pipenv run isort .
+
+      - name: Execute Flake8
+        run: pipenv run flake8 --exclude dist,build
+
+      - name: Execute PyLint
+        run: pipenv run pylint ${{github.workspace}}/test
+
+      - name: Execute MyPy
+        run: pipenv run mypy --strict test
+
+      # - name: Execute PyMarkdown on Current Docs
+      #   run: pipenv run python ${{github.workspace}}/main.py --config ${{github.workspace}}/clean.json scan ${{github.workspace}} ${{github.workspace}}/docs
+
+  pre-commit-tests:
+
+    name: Pre-Commit Tests
+    strategy:
+      matrix:
+        # python: ["3.8", "3.9", "3.10"]
+        python: ["3.8"]
+        platform: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@master
+
+      - name: Setup Python ${{ matrix.python }}
+        uses: actions/setup-python@v4.5.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install PipEnv
+        run: |
+          pip install pipenv==2022.1.8
+
+      - name: Sync With Repository
+        run: |
+          pipenv lock
+          pipenv sync
+          pipenv uninstall pytest-html
+
+      - name: Execute Tests
+        run: pipenv run pytest --cov-fail-under=90 --cov --cov-branch
