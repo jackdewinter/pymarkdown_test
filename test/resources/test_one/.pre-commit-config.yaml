@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/jackdewinter/pymarkdown
+    rev: {{git-sha}}
+    hooks:
+      - id: pymarkdown
+        pass_filenames: false
+        args:
+          - scan
+          - .
