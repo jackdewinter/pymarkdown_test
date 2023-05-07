@@ -22,6 +22,8 @@ jobs:
         if: github.event.action == 'request-integration'
         run: |
           echo "Event '${{ github.event.action }}' received from '${{ github.event.client_payload.repository }}'"
+          echo "REF: '${{ github.event.client_payload.ref }}'"
+          echo "SHA: '${{ github.event.action }}' received from '${{ github.event.client_payload.sha }}'"
       # - name: PONG - Dispatch response to received PING
       #   if: github.event.action == 'request-integration'
       #   run: |
