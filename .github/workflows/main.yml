@@ -120,6 +120,7 @@ jobs:
         id: download-artifact
         uses: dawidd6/action-download-artifact@v2
         with:
+          name: my-artifact
           github_token: ${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
           repo: jackdewinter/pymarkdown
           commit: ${{ env.REMOTE_SHA }}
