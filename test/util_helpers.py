@@ -53,16 +53,25 @@ class UtilHelpers:
     Class to provide utility helper methods for the integration tests.
     """
 
+    __old_hash_value: str = ""
+
     @staticmethod
     def get_branch_hash() -> str:
         """
         Determine the hash to use for the branch.
         """
+        if UtilHelpers.__old_hash_value:
+            print("Using hash '{UtilHelpers.__old_hash_value}' from previous test.")
+            return UtilHelpers.__old_hash_value
 
-        # def_branch = UtilHelpers.get_default_branch()
-        # branch_hash = UtilHelpers.get_branch_head_hash(def_branch)
-        branch_hash = "55b0cfffe3d8cc21c8cd0b94322cc4c839a03095"
-        branch_hash = "v0.9.9"
+        branch_hash = os.environ.get("REMOTE_SHA")
+        if branch_hash:
+            print("Using hash '{branch_hash}' from environment.")
+        else:
+            def_branch = UtilHelpers.get_default_branch()
+            branch_hash = UtilHelpers.get_branch_head_hash(def_branch)
+            print("Using hash '{branch_hash}' from default branch.")
+        UtilHelpers.__old_hash_value = branch_hash
         return branch_hash
 
     @staticmethod

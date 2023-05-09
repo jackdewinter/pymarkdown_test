@@ -14,28 +14,11 @@ env:
 
 jobs:
 
-  ping-pong:
-
-    runs-on: ubuntu-latest
-    steps:
-      - name: Event Information
-        if: github.event.action == 'request-integration'
-        run: |
-          echo "Event '${{ github.event.action }}' received from '${{ github.event.client_payload.repository }}'"
-          echo "REF: '${{ github.event.client_payload.ref }}'"
-          echo "SHA: '${{ github.event.action }}' received from '${{ github.event.client_payload.sha }}'"
-      # - name: PONG - Dispatch response to received PING
-      #   if: github.event.action == 'request-integration'
-      #   run: |
-      #     curl -X POST https://api.github.com/repos/marcnuri-demo/actions-remote-dispatch-a/dispatches \
-      #     -H 'Accept: application/vnd.github.everest-preview+json' \
-      #     -u ${{ secrets.ACCESS_TOKEN }} \
-      #     --data '{"event_type": "pong", "client_payload": { "repository": "'"$GITHUB_REPOSITORY"'" }}'
-
   lint:
 
     name: Project Quality Analysis
     runs-on: ubuntu-latest
+    if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
 
     steps:
 
@@ -85,6 +68,7 @@ jobs:
         python: ["3.8"]
         platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
+    if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
 
     steps:
 
@@ -106,5 +90,43 @@ jobs:
           pipenv sync
           pipenv uninstall pytest-html
 
+      - name: Get Hash From Event Information
+        if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
+        run: |
+          echo "REMOTE_SHA=${{ github.event.client_payload.sha }}" >> $GITHUB_ENV
+
       - name: Execute Tests
-        run: pipenv run pytest
+        run: |
+          echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
+          pipenv run pytest
+
+  install-tests:
+
+    name: Install Package Tests
+    runs-on: ubuntu-latest
+    # if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@master
+
+      - name: Get Hash From Event Information
+        run: |
+          # echo "REMOTE_SHA=${{ github.event.client_payload.sha }}" >> $GITHUB_ENV
+          echo "REMOTE_SHA=108727f2c08db98043b5e0bc5136b7daf54beb59" >> $GITHUB_ENV
+
+      - name: Download artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          repo: jackdewinter/pymarkdown
+          commit: ${{ env.REMOTE_SHA }}
+          workflow_conclusion: success
+          path: ${{github.workspace}}/packages
+
+      - name: Execute Tests
+        run: |
+          echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
+          ls -laR ${{github.workspace}}/packages
