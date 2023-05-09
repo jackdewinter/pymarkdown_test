@@ -114,7 +114,7 @@ jobs:
       - name: Get Hash From Event Information
         run: |
           # echo "REMOTE_SHA=${{ github.event.client_payload.sha }}" >> $GITHUB_ENV
-          echo "REMOTE_SHA=108727f2c08db98043b5e0bc5136b7daf54beb59" >> $GITHUB_ENV
+          echo "REMOTE_SHA=d4268139457f7e21b763572a80ea85844a0ed9f5" >> $GITHUB_ENV
 
       - name: Download artifact
         id: download-artifact
