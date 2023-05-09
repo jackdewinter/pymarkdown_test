@@ -114,6 +114,7 @@ jobs:
       - name: Get Hash From Event Information
         run: |
           echo "REMOTE_RUN_ID=${{ github.event.client_payload.run_id }}" >> $GITHUB_ENV
+          echo "Running tests for run_id '${{ env.REMOTE_RUN_ID }}'."
 
       - name: Download artifact
         id: download-artifact
@@ -128,5 +129,4 @@ jobs:
 
       - name: Execute Tests
         run: |
-          echo "Running tests for run_id '${{ env.REMOTE_RUN_ID }}'."
           ls -laR ${{github.workspace}}/packages
