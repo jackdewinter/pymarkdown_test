@@ -7,7 +7,7 @@ import tempfile
 from .util_helpers import UtilHelpers
 
 
-def test_one() -> None:  # sourcery skip: extract-method
+def test_pre_commit_one() -> None:  # sourcery skip: extract-method
     """
     Test to make sure that PyMarkdown can be invoked through Pre-Commit.
     """
@@ -29,7 +29,7 @@ def test_one() -> None:  # sourcery skip: extract-method
         assert pre_commit_result.does_any_line_match_expression(r"PyMarkdown\.*Passed")
 
 
-def test_two() -> None:  # sourcery skip: extract-method
+def test_pre_commit_two() -> None:  # sourcery skip: extract-method
     """
     Test to make sure that PyMarkdown can be invoked through Pre-Commit and report an error.
     """
@@ -57,7 +57,7 @@ def test_two() -> None:  # sourcery skip: extract-method
         assert pre_commit_result.does_any_line_match_string(error_line)
 
 
-def test_three() -> None:  # sourcery skip: extract-method
+def test_pre_commit_three() -> None:  # sourcery skip: extract-method
     """
     Test to make sure that PyMarkdown can be invoked through Pre-Commit and not report an error
     through disabling on the command line.
@@ -80,7 +80,7 @@ def test_three() -> None:  # sourcery skip: extract-method
         assert pre_commit_result.does_any_line_match_expression(r"PyMarkdown\.*Passed")
 
 
-def test_four() -> None:  # sourcery skip: extract-method
+def test_pre_commit_four() -> None:  # sourcery skip: extract-method
     """
     Test to make sure that PyMarkdown can be invoked through Pre-Commit and not report an error
     through disabling through a configuration file.
