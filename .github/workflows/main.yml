@@ -85,9 +85,6 @@ jobs:
 
       - name: Sync With Repository
         run: |
-          PIPENV_VENV_IN_PROJECT=1
-          echo "PIPENV_VENV_IN_PROJECT=1" >> $GITHUB_ENV
-
           pipenv lock
           pipenv sync
           pipenv uninstall pytest-html
@@ -101,7 +98,7 @@ jobs:
       - name: Execute Tests
         run: |
           echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
-          PIPENV_VENV_IN_PROJECT=1 pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
+          pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
 
   install-tests:
 
@@ -129,9 +126,6 @@ jobs:
 
       - name: Sync With Repository
         run: |
-          PIPENV_VENV_IN_PROJECT=1
-          echo "PIPENV_VENV_IN_PROJECT=1" >> $GITHUB_ENV
-
           pipenv lock
           pipenv sync
           pipenv uninstall pytest-html
@@ -155,4 +149,4 @@ jobs:
       - name: Execute Tests
         run: |
           export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-          PIPENV_VENV_IN_PROJECT=1 pipenv run pytest --durations=0 --capture=tee-sys -m packages
+          pipenv run pytest --durations=0 --capture=tee-sys -m packages
