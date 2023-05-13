@@ -23,3 +23,4 @@ for i in all_lines:
 assert did_find, "Did not find and replace python version with current version."
 with open(file_path, "wt", encoding="utf-8") as output_file:
     output_file.writelines(modified_lines)
+print(f"Replaced Pipfile version with '{current_python_version}'.")

@@ -88,7 +88,7 @@ jobs:
 
       - name: Sync With Repository
         run: |
-          python ${{ github.workspace }}/modify_pipfile.py
+          python modify_pipfile.py
           pipenv lock
           pipenv sync
           pipenv uninstall pytest-html
@@ -135,7 +135,7 @@ jobs:
 
       - name: Sync With Repository
         run: |
-          python ${{ github.workspace }}/modify_pipfile.py
+          python modify_pipfile.py
           pipenv lock
           pipenv sync
           pipenv uninstall pytest-html
