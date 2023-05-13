@@ -286,16 +286,18 @@ class UtilHelpers:
         Do a thorough comparison of the actual stream against the expected text.
         """
 
+        print("Comparing expected against differences.")
         was_one_different, line_differences = UtilHelpers.__find_line_differences(
             expected_text_lines, actual_text_lines
         )
-        if was_one_different:
+        if not was_one_different:
             return
         if sys.platform.startswith("win"):
+            print("Comparing expected against windows differences.")
             was_one_different, line_differences = UtilHelpers.__find_line_differences(
                 windows_output_lines, actual_text_lines
             )
-            if was_one_different:
+            if not was_one_different:
                 return
 
         # print("==========")
