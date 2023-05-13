@@ -68,8 +68,8 @@ class UtilHelpers:
         if UtilHelpers.__old_access_token:
             return UtilHelpers.__old_access_token
 
-        print("Querying environment for variable GITHUB_ACCESS_TOKEN.")
-        env_run_id = os.environ.get("GITHUB_ACCESS_TOKEN")
+        print("Querying environment for variable INTER_PROJECT_ACCESS_TOKEN.")
+        env_run_id = os.environ.get("INTER_PROJECT_ACCESS_TOKEN")
         UtilHelpers.__old_access_token = env_run_id
         return env_run_id
 
@@ -150,6 +150,7 @@ class UtilHelpers:
         if branch_hash:
             print(f"Using hash '{branch_hash}' from environment.")
         else:
+            print(f"Calculating hash '{branch_hash}' from last workflow run of default branch.")
             if not UtilHelpers.get_github_key_token_from_environment():
                 assert False, "GitHub Personal Access Token not provided."
 
