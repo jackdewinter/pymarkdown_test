@@ -68,7 +68,7 @@ jobs:
         python: ["3.8"]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
-    timeout: 120
+    timeout-minutes: 5
 
     steps:
 
@@ -111,7 +111,7 @@ jobs:
         python: ["3.8"]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
-    timeout: 300
+    timeout-minutes: 5
 
     steps:
 
