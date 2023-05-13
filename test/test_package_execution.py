@@ -44,6 +44,7 @@ def test_package_one() -> None:
             windows_output_lines,
         )
 
+
 @pytest.mark.packages
 def test_package_two() -> None:
     """
@@ -55,10 +56,11 @@ def test_package_two() -> None:
     expected_output_lines = UtilHelpers.load_templated_output(
         "package_two", "output_template"
     )
-    windows_output_lines = []
 
     with tempfile.TemporaryDirectory() as temporary_directory:
-        UtilHelpers.copy_test_resource_file_to_test_directory("package_two", "test.md", temporary_directory)
+        UtilHelpers.copy_test_resource_file_to_test_directory(
+            "package_two", "test.md", temporary_directory
+        )
         execution_environment = UtilHelpers.install_pymarkdown_in_fresh_environment(
             temporary_directory
         )
@@ -73,8 +75,5 @@ def test_package_two() -> None:
         # Assert
         assert bob_sync.return_code == 1
         UtilHelpers.compare_actual_output_versus_expected_output(
-            "package_two",
-            bob_sync.std_out.splitlines(),
-            expected_output_lines,
-            windows_output_lines,
+            "package_two", bob_sync.std_out.splitlines(), expected_output_lines
         )

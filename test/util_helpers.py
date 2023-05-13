@@ -265,7 +265,7 @@ class UtilHelpers:
         stream_name: str,
         actual_text_lines: List[str],
         expected_text_lines: List[str],
-        windows_output_lines: List[str],
+        windows_output_lines: Optional[List[str]] = None,
     ) -> None:
         """
         Do a thorough comparison of the actual stream against the expected text.
@@ -443,7 +443,7 @@ class UtilHelpers:
 
     @staticmethod
     def copy_test_resource_file_to_test_directory(
-        test_name: str, file_name:str, destination_directory: str
+        test_name: str, file_name: str, destination_directory: str
     ) -> None:
         """
         Copy the directory from the resources to a new test directory.
