@@ -14,24 +14,6 @@ env:
 
 jobs:
 
-  ping-pong:
-
-    runs-on: ubuntu-latest
-    steps:
-      - name: Event Information
-        if: github.event.action == 'request-integration'
-        run: |
-          echo "Event '${{ github.event.action }}' received from '${{ github.event.client_payload.repository }}'"
-          echo "REF: '${{ github.event.client_payload.ref }}'"
-          echo "SHA: '${{ github.event.action }}' received from '${{ github.event.client_payload.sha }}'"
-      # - name: PONG - Dispatch response to received PING
-      #   if: github.event.action == 'request-integration'
-      #   run: |
-      #     curl -X POST https://api.github.com/repos/marcnuri-demo/actions-remote-dispatch-a/dispatches \
-      #     -H 'Accept: application/vnd.github.everest-preview+json' \
-      #     -u ${{ secrets.ACCESS_TOKEN }} \
-      #     --data '{"event_type": "pong", "client_payload": { "repository": "'"$GITHUB_REPOSITORY"'" }}'
-
   lint:
 
     name: Project Quality Analysis
@@ -82,9 +64,54 @@ jobs:
     strategy:
       matrix:
         # python: ["3.8", "3.9", "3.10"]
+        # platform: [windows-latest, ubuntu-latest, macos-latest]
         python: ["3.8"]
-        platform: [windows-latest, ubuntu-latest, macos-latest]
+        platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
+    timeout-minutes: 5
+
+    steps:
+
+      - name: Checkout Repository
+        uses: actions/checkout@master
+
+      - name: Setup Python ${{ matrix.python }}
+        uses: actions/setup-python@v4.5.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install PipEnv
+        run: |
+          pip install pipenv==2022.1.8
+
+      - name: Sync With Repository
+        run: |
+          pipenv lock
+          pipenv sync
+          pipenv uninstall pytest-html
+          pipenv graph
+
+      - name: Get Hash From Event Information
+        if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
+        run: |
+          echo "REMOTE_SHA=${{ github.event.client_payload.sha }}" >> $GITHUB_ENV
+
+      - name: Execute Tests
+        run: |
+          echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
+          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
+
+  install-tests:
+
+    name: Install Package Tests
+    strategy:
+      matrix:
+        # python: ["3.8", "3.9", "3.10"]
+        python: ["3.8"]
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
+    timeout-minutes: 5
 
     steps:
 
@@ -106,5 +133,23 @@ jobs:
           pipenv sync
           pipenv uninstall pytest-html
 
+      - name: Get Run ID From Event Information
+        if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
+        run: |
+          echo "REMOTE_RUN_ID=${{ github.event.client_payload.run_id }}" >> $GITHUB_ENV
+
+      # - name: Download artifact
+      #   id: download-artifact
+      #   uses: dawidd6/action-download-artifact@v2
+      #   with:
+      #     name: my-artifact
+      #     github_token: ${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+      #     repo: jackdewinter/pymarkdown
+      #     run_id: ${{ env.REMOTE_RUN_ID }}
+      #     workflow_conclusion: success
+      #     path: ${{github.workspace}}/packages
+
       - name: Execute Tests
-        run: pipenv run pytest
+        run: |
+          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          pipenv run pytest --durations=0 --capture=tee-sys -m packages

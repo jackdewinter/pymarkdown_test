@@ -1,4 +1,5 @@
 @echo off
+set PIPENV_VENV_IN_PROJECT=1
 setlocal EnableDelayedExpansion
 pushd %~dp0
 
@@ -12,6 +13,8 @@ set PTEST_SCRIPT_DIRECTORY=%~dp0
 
 rem Look for options on the command line.
 set PTEST_QUIET_MODE=
+set PTEST_MARKER=
+set PTEST_KEYWORD=
 :process_arguments
 if "%1" == "-h" (
     echo Command: %0 [options]
@@ -21,13 +24,21 @@ if "%1" == "-h" (
     echo     -h                This message.
     echo     -q                Quiet mode.
 	echo     -k [keyword]      Execute only the tests matching the specified keyword.
+	echo     -m [marker]       Execute only the tests matching the specified marker.
     GOTO real_end
 ) else if "%1" == "-q" (
 	set PTEST_QUIET_MODE=1
 ) else if "%1" == "-k" (
 	set PTEST_KEYWORD=%2
 	if not defined PTEST_KEYWORD (
-		echo Option -k requires a keyword argument to follow it.
+		echo Option -m requires a keyword argument to follow it.
+		goto error_end
+	)
+	shift
+) else if "%1" == "-m" (
+	set PTEST_MARKER=%2
+	if not defined PTEST_MARKER (
+		echo Option -k requires a marker argument to follow it.
 		goto error_end
 	)
 	shift
@@ -42,7 +53,9 @@ shift
 goto process_arguments
 :after_process_arguments
 
-if defined PTEST_KEYWORD (
+if defined PTEST_MARKER (
+	set PTEST_KEYWORD=-m %PTEST_MARKER%
+) else if defined PTEST_KEYWORD (
 	set PTEST_KEYWORD=-k %PTEST_KEYWORD%
 )
 
@@ -55,14 +68,14 @@ if defined PTEST_KEYWORD (
 )
 set TEST_EXECUTION_FAILED=
 if not defined PTEST_QUIET_MODE (
-	pipenv run pytest %PYTEST_ARGS% %PTEST_KEYWORD%
+	pipenv run pytest --durations=0 --capture=tee-sys %PYTEST_ARGS% %PTEST_KEYWORD%
 	if ERRORLEVEL 1 (
 		echo.
 		echo {Executing test suite failed.}
 		set TEST_EXECUTION_FAILED=1
 	)
 ) else (
-	pipenv run pytest %PYTEST_ARGS% %PTEST_KEYWORD% > %PTEST_TEMPFILE% 2>&1
+	pipenv run pytest --durations=0 --capture=tee-sys %PYTEST_ARGS% %PTEST_KEYWORD% > %PTEST_TEMPFILE% 2>&1
 	if ERRORLEVEL 1 (
 		type %PTEST_TEMPFILE%
 		echo.

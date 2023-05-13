@@ -2,13 +2,15 @@
 Module to provide helper methods and classes for tests.
 """
 import dataclasses
+import difflib
 import json
 import os
 import re
 import shutil
 import subprocess
-from typing import Optional, cast
-from urllib.request import urlopen
+import zipfile
+from typing import Any, Dict, List, Optional, cast
+from urllib.request import Request, urlopen
 
 
 @dataclasses.dataclass()
@@ -53,16 +55,111 @@ class UtilHelpers:
     Class to provide utility helper methods for the integration tests.
     """
 
+    __old_hash_value: str = ""
+    __old_access_token: Optional[str] = None
+    __package_extension = ".tar.gz"
+
     @staticmethod
-    def get_branch_hash() -> str:
+    def get_github_key_token_from_environment() -> Optional[str]:
         """
-        Determine the hash to use for the branch.
+        Query the environment for a access token to use.
         """
 
-        # def_branch = UtilHelpers.get_default_branch()
-        # branch_hash = UtilHelpers.get_branch_head_hash(def_branch)
-        branch_hash = "55b0cfffe3d8cc21c8cd0b94322cc4c839a03095"
-        branch_hash = "v0.9.9"
+        if UtilHelpers.__old_access_token:
+            return UtilHelpers.__old_access_token
+
+        print("Querying environment for variable GITHUB_ACCESS_TOKEN.")
+        env_run_id = os.environ.get("GITHUB_ACCESS_TOKEN")
+        UtilHelpers.__old_access_token = env_run_id
+        return env_run_id
+
+    @staticmethod
+    def get_workflow_run_id_from_environment() -> Optional[int]:
+        """
+        Query the environment for a workflow run id to use.
+        """
+
+        print("Querying environment for variable REMOTE_RUN_ID.")
+        if env_run_id := os.environ.get("REMOTE_RUN_ID"):
+            return int(env_run_id)
+        return None
+
+    @staticmethod
+    def __get_remote_branch_sha_from_enviroment() -> Optional[str]:
+        """
+        Query the environment for a SHA for a branch.
+        """
+
+        print("Querying environment for variable REMOTE_SHA.")
+        return os.environ.get("REMOTE_SHA")
+
+    @staticmethod
+    def get_packages_path() -> str:
+        """
+        Get the path where Pip packages are expected to be kept.
+        """
+
+        return os.path.join(os.getcwd(), "packages")
+
+    @staticmethod
+    def __url_open(url_to_open: str) -> Dict[str, Any]:
+        """
+        Submit a GET request for JSON data.
+        """
+
+        req = Request(url_to_open)
+        req.add_header(
+            "Authorization",
+            f"token {UtilHelpers.get_github_key_token_from_environment()}",
+        )
+        with urlopen(req) as response:
+            json_object = json.loads(response.read().decode("utf-8"))
+            return cast(Dict[str, Any], json_object)
+
+    @staticmethod
+    def url_open_binary(url_to_open: str) -> None:
+        """
+        Submnit a GET request for a binary file that is a zip file,
+        and extract any contents into the packages directory.
+        """
+
+        packages_path = os.path.join(os.getcwd(), "packages")
+        zip_file_download_path = os.path.join(packages_path, "download.zip")
+
+        req = Request(url_to_open)
+        req.add_header(
+            "Authorization",
+            f"token {UtilHelpers.get_github_key_token_from_environment()}",
+        )
+        with urlopen(req) as response, open(zip_file_download_path, "wb") as out_file:
+            shutil.copyfileobj(response, out_file)
+
+        with zipfile.ZipFile(zip_file_download_path) as zip_file:
+            zip_file.extractall(packages_path)
+
+    @staticmethod
+    def calculate_branch_hash() -> str:
+        """
+        Calculate the hash to use for the branch.
+        """
+        if UtilHelpers.__old_hash_value:
+            print(f"Using hash '{UtilHelpers.__old_hash_value}' from previous test.")
+            return UtilHelpers.__old_hash_value
+
+        branch_hash = UtilHelpers.__get_remote_branch_sha_from_enviroment()
+        if branch_hash:
+            print(f"Using hash '{branch_hash}' from environment.")
+        else:
+            print(
+                f"Calculating hash '{branch_hash}' from last workflow run of default branch."
+            )
+            if not UtilHelpers.get_github_key_token_from_environment():
+                assert False, "GitHub Personal Access Token not provided."
+
+            def_branch = UtilHelpers.__get_default_branch()
+            branch_hash = UtilHelpers.__get_branch_head_hash(def_branch)
+            print(f"Using hash '{branch_hash}' from default branch.")
+        UtilHelpers.__old_hash_value = branch_hash
         return branch_hash
 
     @staticmethod
@@ -147,42 +244,357 @@ class UtilHelpers:
         )
 
     @staticmethod
-    def get_default_branch() -> str:
+    def __make_value_visible(value_to_modify: Any) -> str:
+        """
+        For the given value, turn it into a string if necessary, and then replace
+        any known "invisible" characters with more visible strings.
+        """
+        return (
+            str(value_to_modify)
+            .replace("\b", "\\b")
+            .replace("\\a", "\\a")
+            .replace("\t", "\\t")
+            .replace("\n", "\\n")
+        )
+
+    @staticmethod
+    def compare_actual_output_versus_expected_output(
+        stream_name: str,
+        actual_text_lines: List[str],
+        expected_text_lines: List[str],
+        log_extra: Optional[str] = None,
+    ) -> None:
+        """
+        Do a thorough comparison of the actual stream against the expected text.
+        """
+
+        line_differences = list(difflib.ndiff(expected_text_lines, actual_text_lines))
+        has_one_line_difference = any(
+            (
+                next_possible_difference.startswith("?")
+                or next_possible_difference.startswith("+")
+                or next_possible_difference.startswith("-")
+            )
+            for next_possible_difference in line_differences
+        )
+        if not has_one_line_difference:
+            return
+
+        # print("==========")
+        # for i,j in enumerate(line_differences):
+        #     print(f"{i}:{j}")
+        # print("==========")
+        # print(len(line_differences))
+        formatted_line_differences = "\n".join(line_differences)
+        diff_values = (
+            f"\n---Diff Start---\n{formatted_line_differences}\n---Diff End---\n"
+        )
+
+        print(f"WARN>actual>>{UtilHelpers.__make_value_visible(actual_text_lines)}")
+        print(f"WARN>expect>>{UtilHelpers.__make_value_visible(expected_text_lines)}")
+        if log_extra:
+            print(f"log_extra:{log_extra}")
+        raise AssertionError(f"{stream_name} not as expected:\n{diff_values}")
+
+    @staticmethod
+    def __run_pipenv_lock(directory_path: str, environment_dict: Dict[str, str]) -> Bob:
+        """
+        Create a pipenv lock file.
+        """
+
+        command_result = subprocess.run(
+            [
+                "pipenv",
+                "--python",
+                "3.8",
+                "lock",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=directory_path,
+            env=environment_dict,
+            check=False,
+        )
+
+        print(f"Pipenv Lock code: {str(command_result.returncode)}")
+        if std_out := command_result.stdout.decode("utf-8"):
+            print("Pipenv Lock output:::\n" + std_out + "\n::")
+        if std_error := command_result.stderr.decode("utf-8"):
+            print("Pipenv Lock error:::\n" + std_error + "\n::")
+        return Bob(command_result.returncode, std_out, std_error)
+
+    @staticmethod
+    def __run_pipenv_sync(directory_path: str, environment_dict: Dict[str, str]) -> Bob:
+        """
+        Syncronize to the provided PipEnv packages.
+        """
+
+        command_result = subprocess.run(
+            [
+                "pipenv",
+                "sync",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=directory_path,
+            env=environment_dict,
+            check=False,
+        )
+
+        print(f"Pipenv Sync code: {str(command_result.returncode)}")
+        if std_out := command_result.stdout.decode("utf-8"):
+            print("Pipenv Sync output:::\n" + std_out + "\n::")
+        if std_error := command_result.stderr.decode("utf-8"):
+            print("Pipenv Sync error:::\n" + std_error + "\n::")
+        return Bob(command_result.returncode, std_out, std_error)
+
+    @staticmethod
+    def __run_pipenv_install(
+        directory_path: str, environment_dict: Dict[str, str], package_path: str
+    ) -> Bob:
+        """
+        Used PipEnv install to install the specified package.
+        """
+
+        command_result = subprocess.run(
+            ["pipenv", "install", package_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=directory_path,
+            env=environment_dict,
+            check=False,
+        )
+
+        print(f"Pipenv Install code: {str(command_result.returncode)}")
+        if std_out := command_result.stdout.decode("utf-8"):
+            print("Pipenv Install output:::\n" + std_out + "\n::")
+        if std_error := command_result.stderr.decode("utf-8"):
+            print("Pipenv Install error:::\n" + std_error + "\n::")
+        return Bob(command_result.returncode, std_out, std_error)
+
+    @staticmethod
+    def run_pipenv_run(
+        directory_path: str, environment_dict: Dict[str, str], run_arguments: List[str]
+    ) -> Bob:
+        """
+        Execute a "Pipenv run" command.
+        """
+
+        pipenv_run_arguments = ["pipenv", "run", *run_arguments]
+        command_result = subprocess.run(
+            pipenv_run_arguments,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=directory_path,
+            env=environment_dict,
+            check=False,
+        )
+
+        print(f"Pipenv Install code: {str(command_result.returncode)}")
+        if std_out := command_result.stdout.decode("utf-8"):
+            print("Pipenv Install output:::\n" + std_out + "\n::")
+        if std_error := command_result.stderr.decode("utf-8"):
+            print("Pipenv Install error:::\n" + std_error + "\n::")
+        return Bob(command_result.returncode, std_out, std_error)
+
+    @staticmethod
+    def search_for_eligible_packages_to_install() -> List[str]:
+        """
+        Search in the local "packages" directory for pip install packages.
+        """
+
+        packages_path = UtilHelpers.get_packages_path()
+        if os.path.exists(packages_path):
+            assert os.path.isdir(
+                packages_path
+            ), f"Path {packages_path} should be a directory."
+        try:
+            files = os.listdir(packages_path)
+            files = [
+                f
+                for f in files
+                if os.path.isfile(os.path.join(packages_path, f))
+                and f.endswith(UtilHelpers.__package_extension)
+            ]
+        except FileNotFoundError:
+            files = []
+        return files
+
+    @staticmethod
+    def __get_only_package_to_install() -> str:
+        """
+        In the packages directory, there should be one-and-only-one tar file.
+        """
+
+        files = UtilHelpers.search_for_eligible_packages_to_install()
+        packages_path = UtilHelpers.get_packages_path()
+        assert len(files) == 1, (
+            f"Only one file matching {UtilHelpers.__package_extension} should exist "
+            + f"in {packages_path}"
+        )
+        return os.path.join(packages_path, files[0])
+
+    @staticmethod
+    def install_pymarkdown_in_fresh_environment(
+        directory_to_install_in: str,
+    ) -> Dict[str, str]:
+        """
+        In the provided directory, initialize PipEnv and install the one and only
+        one package located in the packages directory.
+        """
+
+        only_package_path = UtilHelpers.__get_only_package_to_install()
+
+        environment_dict = dict(os.environ.copy(), **{"PIPENV_VENV_IN_PROJECT": "1"})
+
+        bob_lock = UtilHelpers.__run_pipenv_lock(
+            directory_to_install_in, environment_dict
+        )
+        assert bob_lock.return_code == 0
+
+        bob_sync = UtilHelpers.__run_pipenv_sync(
+            directory_to_install_in, environment_dict
+        )
+        assert bob_sync.return_code == 0
+
+        bob_sync = UtilHelpers.__run_pipenv_install(
+            directory_to_install_in, environment_dict, only_package_path
+        )
+        assert bob_sync.return_code == 0
+        return environment_dict
+
+    @staticmethod
+    def load_templated_output(test_name: str, template_file: str) -> List[str]:
+        """
+        Load a templated file, strip any line endings, and apply any templated
+        values specified in the dictionary.
+        """
+
+        source_directory = os.path.join(os.getcwd(), "test", "resources", test_name)
+        file_path = os.path.join(source_directory, template_file)
+        with open(file_path, "rt", encoding="utf-8") as input_file:
+            all_lines = input_file.readlines()
+
+        return [i[:-1] for i in all_lines]
+
+    @staticmethod
+    def get_workflow_id_for_workflow_path(relative_workflow_path: str) -> int:
+        """
+        Find the workflow id for a workflow with the specified path.
+        """
+
+        print(
+            f"  Searching workflows for relative workflow path '{relative_workflow_path}'."
+        )
+        git_response = UtilHelpers.__url_open(
+            "https://api.github.com/repos/jackdewinter/pymarkdown/actions/workflows"
+        )
+
+        fixed_path = f".github/workflows/{relative_workflow_path}"
+        for i in git_response["workflows"]:
+            if i["path"] == fixed_path:
+                workflow_id = int(i["id"])
+                print(f"  Workflow id '{workflow_id}' found.")
+                return workflow_id
+        assert (
+            False
+        ), f"No workflow with a relative path of {relative_workflow_path} was found."
+
+    @staticmethod
+    def find_workflow_run_object_from_workflow_id(
+        workflow_id: int, branch_name: str
+    ) -> Dict[str, Any]:
+        """
+        Use the workflow id and the branch name to find the last time a workflow was
+        executed for that branch.
+        """
+
+        print(
+            f"  Searching workflow id {workflow_id} for last run for branch '{branch_name}'."
+        )
+        git_response = UtilHelpers.__url_open(
+            "https://api.github.com/repos/jackdewinter/pymarkdown"
+            + f"/actions/workflows/{workflow_id}/runs"
+        )
+
+        for i in git_response["workflow_runs"]:
+            if i["head_branch"] == branch_name:
+                workflow_run_id = i["id"]
+                print(
+                    f"  Workflow run id '{workflow_run_id}' for branch name '{branch_name}' found."
+                )
+                return cast(Dict[str, Any], i)
+        assert False, f"No workflow run with a branch name of {branch_name} was found."
+
+    @staticmethod
+    def get_workflow_run_object_from_run_id(run_id: int) -> Dict[str, Any]:
+        """
+        Fetch the workflow object by its run id.
+        """
+
+        return UtilHelpers.__url_open(
+            f"https://api.github.com/repos/jackdewinter/pymarkdown/actions/runs/{run_id}"
+        )
+
+    @staticmethod
+    def get_artifact_object_from_workflow_run_object(
+        workflow_run_object: Dict[str, Any], artifact_name: str
+    ) -> Dict[str, Any]:
+        """
+        Fetch the artifact object using the information in the workflow object.
+        """
+
+        workflow_run_id = workflow_run_object["id"]
+        print(
+            f"  Searching workflow id {workflow_run_id} for artifact named '{artifact_name}'."
+        )
+        git_response = UtilHelpers.__url_open(workflow_run_object["artifacts_url"])
+
+        for i in git_response["artifacts"]:
+            if i["name"] == artifact_name:
+                return cast(Dict[str, Any], i)
+        assert False, (
+            f"No artifact with a name of {artifact_name} was found in "
+            + f"workflow run id '{workflow_run_id}'."
+        )
+
+    @staticmethod
+    def __get_default_branch() -> str:
         """
         Use the GitHub API to determine the default branch for the repository.
         """
-
-        with urlopen(
+        print("  Searching repository for the default branch name.")
+        git_response = UtilHelpers.__url_open(
             "https://api.github.com/repos/jackdewinter/pymarkdown"
-        ) as response:
-            git_response = json.loads(response.read().decode("utf-8"))
-            default_branch = git_response["default_branch"]
+        )
+        default_branch = git_response["default_branch"]
 
-            assert default_branch is not None
-            resultant_branch = cast(str, default_branch)
-            print(f"Default Branch: {resultant_branch}")
-            return resultant_branch
+        assert default_branch is not None
+        resultant_branch = cast(str, default_branch)
+        print(f"  Default Branch name is '{resultant_branch}'.")
+        return resultant_branch
 
     @staticmethod
-    def get_branch_head_hash(branch_name: str) -> str:
+    def __get_branch_head_hash(branch_name: str) -> str:
         """
         Use the GitHub API to determine the head hash fo rthe supplied branch.
         """
 
-        with urlopen(
+        print(f"  Searching repository branch '{branch_name}' for the latest commit.")
+        git_response = UtilHelpers.__url_open(
             "https://api.github.com/repos/jackdewinter/pymarkdown/git/refs/heads"
-        ) as response:
-            git_response = json.loads(response.read().decode("utf-8"))
-            branch_head_ref = f"refs/heads/{branch_name}"
-            branch_hash = next(
-                (
-                    i["object"]["sha"]
-                    for i in git_response
-                    if i["ref"] == branch_head_ref
-                ),
-                None,
-            )
-            assert branch_hash is not None
-            resultant_hash = cast(str, branch_hash)
-            print(f"Default Branch Hash: {resultant_hash}")
-            return resultant_hash
+        )
+        modified_git_response = cast(List[Dict[str, Any]], git_response)
+
+        branch_head_ref = f"refs/heads/{branch_name}"
+        branch_hash = next(
+            (
+                cast(str, i["object"]["sha"])
+                for i in modified_git_response
+                if i["ref"] == branch_head_ref
+            ),
+            None,
+        )
+        assert branch_hash is not None
+        print(f"  Default Branch Hash: {branch_hash}")
+        return branch_hash
