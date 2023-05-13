@@ -64,9 +64,8 @@ jobs:
     strategy:
       matrix:
         # python: ["3.8", "3.9", "3.10"]
-        # platform: [windows-latest, ubuntu-latest, macos-latest]
         python: ["3.8"]
-        platform: [ubuntu-latest]
+        platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 5
 
@@ -109,7 +108,7 @@ jobs:
       matrix:
         # python: ["3.8", "3.9", "3.10"]
         python: ["3.8"]
-        platform: [ubuntu-latest]
+        platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 5
 
