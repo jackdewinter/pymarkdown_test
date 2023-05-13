@@ -1,10 +1,10 @@
-+ usage: pymarkdown.EXE [-h] [-e ENABLE_RULES] [-d DISABLE_RULES]
-+                       [--add-plugin ADD_PLUGIN] [--config CONFIGURATION_FILE]
-+                       [--set SET_CONFIGURATION] [--strict-config]
-+                       [--stack-trace]
-+                       [--log-level {CRITICAL,ERROR,WARNING,INFO,DEBUG}]
-+                       [--log-file LOG_FILE]
-+                       {plugins,extensions,scan,scan-stdin,version} ...
+usage: pymarkdown.EXE [-h] [-e ENABLE_RULES] [-d DISABLE_RULES]
+                      [--add-plugin ADD_PLUGIN] [--config CONFIGURATION_FILE]
+                      [--set SET_CONFIGURATION] [--strict-config]
+                      [--stack-trace]
+                      [--log-level {CRITICAL,ERROR,WARNING,INFO,DEBUG}]
+                      [--log-file LOG_FILE]
+                      {plugins,extensions,scan,scan-stdin,version} ...
   
 Lint any found Markdown files.
 
