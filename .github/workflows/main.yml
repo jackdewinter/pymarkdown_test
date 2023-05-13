@@ -68,6 +68,7 @@ jobs:
         python: ["3.8"]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
+    timeout: 120
 
     steps:
 
@@ -98,6 +99,7 @@ jobs:
       - name: Execute Tests
         run: |
           echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
+          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
           pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
 
   install-tests:
@@ -109,6 +111,7 @@ jobs:
         python: ["3.8"]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
+    timeout: 300
 
     steps:
 
