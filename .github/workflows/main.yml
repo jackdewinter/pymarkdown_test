@@ -18,7 +18,6 @@ jobs:
 
     name: Project Quality Analysis
     runs-on: ubuntu-latest
-    if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
 
     steps:
 
@@ -65,10 +64,10 @@ jobs:
     strategy:
       matrix:
         # python: ["3.8", "3.9", "3.10"]
+        # platform: [windows-latest, ubuntu-latest, macos-latest]
         python: ["3.8"]
-        platform: [windows-latest, ubuntu-latest, macos-latest]
+        platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
-    # if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
 
     steps:
 
@@ -89,6 +88,7 @@ jobs:
           pipenv lock
           pipenv sync
           pipenv uninstall pytest-html
+          pipenv graph
 
       - name: Get Hash From Event Information
         if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
