@@ -101,7 +101,7 @@ jobs:
       - name: Execute Tests
         run: |
           echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
-          pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
+          PIPENV_VENV_IN_PROJECT=1 pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
 
   install-tests:
 
@@ -155,4 +155,4 @@ jobs:
       - name: Execute Tests
         run: |
           export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-          pipenv run pytest --durations=0 --capture=tee-sys -m packages
+          PIPENV_VENV_IN_PROJECT=1 pipenv run pytest --durations=0 --capture=tee-sys -m packages
