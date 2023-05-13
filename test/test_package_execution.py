@@ -18,8 +18,6 @@ def __assert_pymarkdown_install_package_present() -> None:
     if not UtilHelpers.get_github_key_token_from_environment():
         assert False, "GitHub Personal Access Token not provided."
     else:
-        print(len(UtilHelpers.get_github_key_token_from_environment()))
-
         print("Did not find eligible package to install.")
         if not os.path.exists(UtilHelpers.get_packages_path()):
             print("Creating packages directory to hold artifacts.")

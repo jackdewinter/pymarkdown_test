@@ -150,7 +150,9 @@ class UtilHelpers:
         if branch_hash:
             print(f"Using hash '{branch_hash}' from environment.")
         else:
-            print(f"Calculating hash '{branch_hash}' from last workflow run of default branch.")
+            print(
+                f"Calculating hash '{branch_hash}' from last workflow run of default branch."
+            )
             if not UtilHelpers.get_github_key_token_from_environment():
                 assert False, "GitHub Personal Access Token not provided."
 
