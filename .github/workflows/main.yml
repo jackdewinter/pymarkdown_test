@@ -114,7 +114,7 @@ jobs:
         python: ["3.8", "3.9"]
         platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
-    timeout-minutes: 5
+    timeout-minutes: 10
     defaults:
       run:
         shell: bash

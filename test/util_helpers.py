@@ -230,21 +230,6 @@ class UtilHelpers:
             output_file.writelines(modified_lines)
 
     @staticmethod
-    def copy_test_resource_to_test_directory(
-        test_name: str, destination_directory: str
-    ) -> None:
-        """
-        Copy the directory from the resources to a new test directory.
-        """
-
-        source_directory = os.path.join(os.getcwd(), "test", "resources", test_name)
-        shutil.copytree(source_directory, destination_directory, dirs_exist_ok=True)
-
-        print(
-            f"Copied directory from '{source_directory}' to '{destination_directory}'."
-        )
-
-    @staticmethod
     def __make_value_visible(value_to_modify: Any) -> str:
         """
         For the given value, turn it into a string if necessary, and then replace
@@ -292,7 +277,7 @@ class UtilHelpers:
         )
         if not was_one_different:
             return
-        if sys.platform.startswith("win"):
+        if windows_output_lines and sys.platform.startswith("win"):
             print("Comparing expected against windows differences.")
             was_one_different, line_differences = UtilHelpers.__find_line_differences(
                 windows_output_lines, actual_text_lines
@@ -455,6 +440,37 @@ class UtilHelpers:
             + f"in {packages_path}"
         )
         return os.path.join(packages_path, files[0])
+
+    @staticmethod
+    def copy_test_resource_directory_to_test_directory(
+        test_name: str, file_name:str, destination_directory: str
+    ) -> None:
+        """
+        Copy the directory from the resources to a new test directory.
+        """
+
+        source_directory = os.path.join(os.getcwd(), "test", "resources", test_name)
+        source_path = os.path.join(source_directory, file_name)
+        shutil.copyfile(source_path, destination_directory)
+
+        print(
+            f"Copied file '{file_name}' from '{source_directory}' to '{destination_directory}'."
+        )
+
+    @staticmethod
+    def copy_test_resource_file_to_test_directory(
+        test_name: str, file_name:str, destination_directory: str
+    ) -> None:
+        """
+        Copy the directory from the resources to a new test directory.
+        """
+
+        source_directory = os.path.join(os.getcwd(), "test", "resources", test_name)
+        shutil.copytree(source_directory, destination_directory, dirs_exist_ok=True)
+
+        print(
+            f"Copied directory from '{source_directory}' to '{destination_directory}'."
+        )
 
     @staticmethod
     def load_templated_output(test_name: str, template_file: str) -> List[str]:
