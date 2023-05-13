@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 from urllib.request import Request, urlopen
 
 
@@ -259,27 +259,44 @@ class UtilHelpers:
         )
 
     @staticmethod
+    def __find_line_differences(
+        expected_text_lines: List[str], actual_text_lines: List[str]
+    ) -> Tuple[bool, List[str]]:
+        line_differences = list(difflib.ndiff(expected_text_lines, actual_text_lines))
+        return (
+            any(
+                (
+                    next_possible_difference.startswith("?")
+                    or next_possible_difference.startswith("+")
+                    or next_possible_difference.startswith("-")
+                )
+                for next_possible_difference in line_differences
+            ),
+            line_differences,
+        )
+
+    @staticmethod
     def compare_actual_output_versus_expected_output(
         stream_name: str,
         actual_text_lines: List[str],
         expected_text_lines: List[str],
-        log_extra: Optional[str] = None,
+        windows_output_lines: List[str],
     ) -> None:
         """
         Do a thorough comparison of the actual stream against the expected text.
         """
 
-        line_differences = list(difflib.ndiff(expected_text_lines, actual_text_lines))
-        has_one_line_difference = any(
-            (
-                next_possible_difference.startswith("?")
-                or next_possible_difference.startswith("+")
-                or next_possible_difference.startswith("-")
-            )
-            for next_possible_difference in line_differences
+        was_one_different, line_differences = UtilHelpers.__find_line_differences(
+            expected_text_lines, actual_text_lines
         )
-        if not has_one_line_difference:
+        if was_one_different:
             return
+        if sys.platform.startswith("win"):
+            was_one_different, line_differences = UtilHelpers.__find_line_differences(
+                windows_output_lines, actual_text_lines
+            )
+            if was_one_different:
+                return
 
         # print("==========")
         # for i,j in enumerate(line_differences):
@@ -293,8 +310,6 @@ class UtilHelpers:
 
         print(f"WARN>actual>>{UtilHelpers.__make_value_visible(actual_text_lines)}")
         print(f"WARN>expect>>{UtilHelpers.__make_value_visible(expected_text_lines)}")
-        if log_extra:
-            print(f"log_extra:{log_extra}")
         raise AssertionError(f"{stream_name} not as expected:\n{diff_values}")
 
     @staticmethod

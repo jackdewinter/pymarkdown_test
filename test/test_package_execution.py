@@ -19,6 +19,9 @@ def test_package_one() -> None:
     expected_output_lines = UtilHelpers.load_templated_output(
         "package_one", "output_template"
     )
+    windows_output_lines = UtilHelpers.load_templated_output(
+        "package_one", "windows_output_template"
+    )
     with tempfile.TemporaryDirectory() as temporary_directory:
         execution_environment = UtilHelpers.install_pymarkdown_in_fresh_environment(
             temporary_directory
@@ -34,5 +37,8 @@ def test_package_one() -> None:
         # Assert
         assert bob_sync.return_code == 2
         UtilHelpers.compare_actual_output_versus_expected_output(
-            "package_one", bob_sync.std_out.splitlines(), expected_output_lines
+            "package_one",
+            bob_sync.std_out.splitlines(),
+            expected_output_lines,
+            windows_output_lines,
         )
