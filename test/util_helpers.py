@@ -442,7 +442,7 @@ class UtilHelpers:
         return os.path.join(packages_path, files[0])
 
     @staticmethod
-    def copy_test_resource_directory_to_test_directory(
+    def copy_test_resource_file_to_test_directory(
         test_name: str, file_name:str, destination_directory: str
     ) -> None:
         """
@@ -451,15 +451,16 @@ class UtilHelpers:
 
         source_directory = os.path.join(os.getcwd(), "test", "resources", test_name)
         source_path = os.path.join(source_directory, file_name)
-        shutil.copyfile(source_path, destination_directory)
+        destination_path = os.path.join(destination_directory, file_name)
+        shutil.copyfile(source_path, destination_path)
 
         print(
             f"Copied file '{file_name}' from '{source_directory}' to '{destination_directory}'."
         )
 
     @staticmethod
-    def copy_test_resource_file_to_test_directory(
-        test_name: str, file_name:str, destination_directory: str
+    def copy_test_resource_directory_to_test_directory(
+        test_name: str, destination_directory: str
     ) -> None:
         """
         Copy the directory from the resources to a new test directory.
