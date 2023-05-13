@@ -4,19 +4,22 @@ Tests to apply the pre-commit hook invocation of PyMarkdown.
 import os
 import tempfile
 
+import pytest
+
 from .util_helpers import UtilHelpers
 
 
+@pytest.mark.pre_commit
 def test_pre_commit_one() -> None:  # sourcery skip: extract-method
     """
     Test to make sure that PyMarkdown can be invoked through Pre-Commit.
     """
 
     # Arrange
-    branch_hash = UtilHelpers.get_branch_hash()
+    branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:
         UtilHelpers.copy_test_resource_to_test_directory(
-            "test_one", temporary_directory
+            "pre_commit_test_one", temporary_directory
         )
         UtilHelpers.localize_precommit_configuration(temporary_directory, branch_hash)
         UtilHelpers.initialize_git_in_directory(temporary_directory)
@@ -29,16 +32,17 @@ def test_pre_commit_one() -> None:  # sourcery skip: extract-method
         assert pre_commit_result.does_any_line_match_expression(r"PyMarkdown\.*Passed")
 
 
+@pytest.mark.pre_commit
 def test_pre_commit_two() -> None:  # sourcery skip: extract-method
     """
     Test to make sure that PyMarkdown can be invoked through Pre-Commit and report an error.
     """
 
     # Arrange
-    branch_hash = UtilHelpers.get_branch_hash()
+    branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:
         UtilHelpers.copy_test_resource_to_test_directory(
-            "test_two", temporary_directory
+            "pre_commit_test_two", temporary_directory
         )
         UtilHelpers.localize_precommit_configuration(temporary_directory, branch_hash)
         UtilHelpers.initialize_git_in_directory(temporary_directory)
@@ -57,6 +61,7 @@ def test_pre_commit_two() -> None:  # sourcery skip: extract-method
         assert pre_commit_result.does_any_line_match_string(error_line)
 
 
+@pytest.mark.pre_commit
 def test_pre_commit_three() -> None:  # sourcery skip: extract-method
     """
     Test to make sure that PyMarkdown can be invoked through Pre-Commit and not report an error
@@ -64,10 +69,10 @@ def test_pre_commit_three() -> None:  # sourcery skip: extract-method
     """
 
     # Arrange
-    branch_hash = UtilHelpers.get_branch_hash()
+    branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:
         UtilHelpers.copy_test_resource_to_test_directory(
-            "test_three", temporary_directory
+            "pre_commit_test_three", temporary_directory
         )
         UtilHelpers.localize_precommit_configuration(temporary_directory, branch_hash)
         UtilHelpers.initialize_git_in_directory(temporary_directory)
@@ -80,6 +85,7 @@ def test_pre_commit_three() -> None:  # sourcery skip: extract-method
         assert pre_commit_result.does_any_line_match_expression(r"PyMarkdown\.*Passed")
 
 
+@pytest.mark.pre_commit
 def test_pre_commit_four() -> None:  # sourcery skip: extract-method
     """
     Test to make sure that PyMarkdown can be invoked through Pre-Commit and not report an error
@@ -87,10 +93,10 @@ def test_pre_commit_four() -> None:  # sourcery skip: extract-method
     """
 
     # Arrange
-    branch_hash = UtilHelpers.get_branch_hash()
+    branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:
         UtilHelpers.copy_test_resource_to_test_directory(
-            "test_four", temporary_directory
+            "pre_commit_test_four", temporary_directory
         )
         UtilHelpers.localize_precommit_configuration(temporary_directory, branch_hash)
         UtilHelpers.initialize_git_in_directory(temporary_directory)

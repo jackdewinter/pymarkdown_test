@@ -68,7 +68,7 @@ jobs:
         python: ["3.8"]
         platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
-    if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
+    # if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
 
     steps:
 
@@ -98,36 +98,57 @@ jobs:
       - name: Execute Tests
         run: |
           echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
-          pipenv run pytest
+          export PIPENV_VENV_IN_PROJECT=1
+          pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
 
   install-tests:
 
     name: Install Package Tests
-    runs-on: ubuntu-latest
-    # if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
+    strategy:
+      matrix:
+        # python: ["3.8", "3.9", "3.10"]
+        python: ["3.8"]
+        platform: [ubuntu-latest]
+    runs-on: ${{ matrix.platform }}
 
     steps:
 
       - name: Checkout Repository
         uses: actions/checkout@master
 
-      - name: Get Hash From Event Information
-        run: |
-          # echo "REMOTE_RUN_ID=${{ github.event.client_payload.run_id }}" >> $GITHUB_ENV
-          echo "REMOTE_RUN_ID=4921930955" >> $GITHUB_ENV
-          echo "Running tests for run_id '${{ env.REMOTE_RUN_ID }}'."
-
-      - name: Download artifact
-        id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
+      - name: Setup Python ${{ matrix.python }}
+        uses: actions/setup-python@v4.5.0
         with:
-          name: my-artifact
-          github_token: ${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-          repo: jackdewinter/pymarkdown
-          run_id: ${{ env.REMOTE_RUN_ID }}
-          workflow_conclusion: success
-          path: ${{github.workspace}}/packages
+          python-version: ${{ matrix.python }}
+
+      - name: Install PipEnv
+        run: |
+          pip install pipenv==2022.1.8
+
+      - name: Sync With Repository
+        run: |
+          pipenv lock
+          pipenv sync
+          pipenv uninstall pytest-html
+
+      - name: Get Run ID From Event Information
+        if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
+        run: |
+          echo "REMOTE_RUN_ID=${{ github.event.client_payload.run_id }}" >> $GITHUB_ENV
+
+      # - name: Download artifact
+      #   id: download-artifact
+      #   uses: dawidd6/action-download-artifact@v2
+      #   with:
+      #     name: my-artifact
+      #     github_token: ${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+      #     repo: jackdewinter/pymarkdown
+      #     run_id: ${{ env.REMOTE_RUN_ID }}
+      #     workflow_conclusion: success
+      #     path: ${{github.workspace}}/packages
 
       - name: Execute Tests
         run: |
-          ls -laR ${{github.workspace}}/packages
+          export PIPENV_VENV_IN_PROJECT=1
+          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          pipenv run pytest --durations=0 --capture=tee-sys -m packages

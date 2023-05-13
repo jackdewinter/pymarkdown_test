@@ -1,4 +1,5 @@
 @echo off
+set PIPENV_VENV_IN_PROJECT=1
 setlocal EnableDelayedExpansion
 pushd %~dp0
 
@@ -66,7 +67,7 @@ if "%SOURCERY_USER_KEY%" == "" (
 	echo {  Executing Sourcery against changed project contents.}
 	set "SOURCERY_LIMIT=--diff ^"git diff^""
 
-	pipenv run sourcery review --check pymarkdown !SOURCERY_LIMIT!
+	pipenv run sourcery review --check test !SOURCERY_LIMIT!
 	if ERRORLEVEL 1 (
 		echo.
 		echo {Executing Sourcery on Python code failed.}
@@ -75,7 +76,7 @@ if "%SOURCERY_USER_KEY%" == "" (
 )
 
 echo {Executing flake8 static analyzer on Python code.}
-pipenv run flake8 -j 4 --exclude dist,build %MY_VERBOSE%
+pipenv run flake8 -j 4 --exclude dist,build,.venv %MY_VERBOSE%
 if ERRORLEVEL 1 (
 	echo.
 	echo {Executing static analyzer on Python code failed.}
