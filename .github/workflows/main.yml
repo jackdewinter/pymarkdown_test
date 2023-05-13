@@ -68,6 +68,9 @@ jobs:
         platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
 
     steps:
 
@@ -111,6 +114,9 @@ jobs:
         platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
 
     steps:
 
