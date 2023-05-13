@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import zipfile
 from typing import Any, Dict, List, Optional, cast
 from urllib.request import Request, urlopen
@@ -60,7 +61,7 @@ class UtilHelpers:
     __package_extension = ".tar.gz"
 
     @staticmethod
-    def get_github_key_token_from_environment() -> Optional[str]:
+    def __get_github_key_token_from_environment() -> Optional[str]:
         """
         Query the environment for a access token to use.
         """
@@ -110,7 +111,7 @@ class UtilHelpers:
         req = Request(url_to_open)
         req.add_header(
             "Authorization",
-            f"token {UtilHelpers.get_github_key_token_from_environment()}",
+            f"token {UtilHelpers.__get_github_key_token_from_environment()}",
         )
         with urlopen(req) as response:
             json_object = json.loads(response.read().decode("utf-8"))
@@ -129,7 +130,7 @@ class UtilHelpers:
         req = Request(url_to_open)
         req.add_header(
             "Authorization",
-            f"token {UtilHelpers.get_github_key_token_from_environment()}",
+            f"token {UtilHelpers.__get_github_key_token_from_environment()}",
         )
         with urlopen(req) as response, open(zip_file_download_path, "wb") as out_file:
             shutil.copyfileobj(response, out_file)
@@ -153,7 +154,7 @@ class UtilHelpers:
             print(
                 f"Calculating hash '{branch_hash}' from last workflow run of default branch."
             )
-            if not UtilHelpers.get_github_key_token_from_environment():
+            if not UtilHelpers.__get_github_key_token_from_environment():
                 assert False, "GitHub Personal Access Token not provided."
 
             def_branch = UtilHelpers.__get_default_branch()
@@ -302,11 +303,15 @@ class UtilHelpers:
         Create a pipenv lock file.
         """
 
+        current_python_version = sys.version
+        index = current_python_version.index("(")
+        current_python_version = current_python_version[:index].strip()
+
         command_result = subprocess.run(
             [
                 "pipenv",
                 "--python",
-                "3.8",
+                current_python_version,
                 "lock",
             ],
             stdout=subprocess.PIPE,
@@ -398,7 +403,7 @@ class UtilHelpers:
         return Bob(command_result.returncode, std_out, std_error)
 
     @staticmethod
-    def search_for_eligible_packages_to_install() -> List[str]:
+    def __search_for_eligible_packages_to_install() -> List[str]:
         """
         Search in the local "packages" directory for pip install packages.
         """
@@ -426,42 +431,13 @@ class UtilHelpers:
         In the packages directory, there should be one-and-only-one tar file.
         """
 
-        files = UtilHelpers.search_for_eligible_packages_to_install()
+        files = UtilHelpers.__search_for_eligible_packages_to_install()
         packages_path = UtilHelpers.get_packages_path()
         assert len(files) == 1, (
             f"Only one file matching {UtilHelpers.__package_extension} should exist "
             + f"in {packages_path}"
         )
         return os.path.join(packages_path, files[0])
-
-    @staticmethod
-    def install_pymarkdown_in_fresh_environment(
-        directory_to_install_in: str,
-    ) -> Dict[str, str]:
-        """
-        In the provided directory, initialize PipEnv and install the one and only
-        one package located in the packages directory.
-        """
-
-        only_package_path = UtilHelpers.__get_only_package_to_install()
-
-        environment_dict = dict(os.environ.copy(), **{"PIPENV_VENV_IN_PROJECT": "1"})
-
-        bob_lock = UtilHelpers.__run_pipenv_lock(
-            directory_to_install_in, environment_dict
-        )
-        assert bob_lock.return_code == 0
-
-        bob_sync = UtilHelpers.__run_pipenv_sync(
-            directory_to_install_in, environment_dict
-        )
-        assert bob_sync.return_code == 0
-
-        bob_sync = UtilHelpers.__run_pipenv_install(
-            directory_to_install_in, environment_dict, only_package_path
-        )
-        assert bob_sync.return_code == 0
-        return environment_dict
 
     @staticmethod
     def load_templated_output(test_name: str, template_file: str) -> List[str]:
@@ -598,3 +574,73 @@ class UtilHelpers:
         assert branch_hash is not None
         print(f"  Default Branch Hash: {branch_hash}")
         return branch_hash
+
+    @staticmethod
+    def install_pymarkdown_in_fresh_environment(
+        directory_to_install_in: str,
+    ) -> Dict[str, str]:
+        """
+        In the provided directory, initialize PipEnv and install the one and only
+        one package located in the packages directory.
+        """
+
+        only_package_path = UtilHelpers.__get_only_package_to_install()
+
+        environment_dict = dict(os.environ.copy(), **{"PIPENV_VENV_IN_PROJECT": "1"})
+
+        bob_lock = UtilHelpers.__run_pipenv_lock(
+            directory_to_install_in, environment_dict
+        )
+        assert bob_lock.return_code == 0
+
+        bob_sync = UtilHelpers.__run_pipenv_sync(
+            directory_to_install_in, environment_dict
+        )
+        assert bob_sync.return_code == 0
+
+        bob_sync = UtilHelpers.__run_pipenv_install(
+            directory_to_install_in, environment_dict, only_package_path
+        )
+        assert bob_sync.return_code == 0
+        return environment_dict
+
+    @staticmethod
+    def assert_pymarkdown_install_package_present() -> None:
+        """
+        Assert that a pymarkdown package is present and that it is installed.
+        """
+
+        eligible_package_list = UtilHelpers.__search_for_eligible_packages_to_install()
+        if len(eligible_package_list) != 0:
+            print(f"Eligible package to install found: {eligible_package_list[0]}")
+            return
+
+        if not UtilHelpers.__get_github_key_token_from_environment():
+            assert False, "GitHub Personal Access Token not provided."
+        else:
+            print("Did not find eligible package to install.")
+            if not os.path.exists(UtilHelpers.get_packages_path()):
+                print("Creating packages directory to hold artifacts.")
+                os.mkdir(UtilHelpers.get_packages_path())
+
+            workflow_run_id = UtilHelpers.get_workflow_run_id_from_environment()
+            if workflow_run_id:
+                print(f"Fetching specified workflow run id '{workflow_run_id}'.")
+                workflow_run_object = UtilHelpers.get_workflow_run_object_from_run_id(
+                    workflow_run_id
+                )
+            else:
+                print("Determining last respective workflow run id.")
+                workflow_id = UtilHelpers.get_workflow_id_for_workflow_path("main.yml")
+                workflow_run_object = (
+                    UtilHelpers.find_workflow_run_object_from_workflow_id(
+                        workflow_id, "main"
+                    )
+                )
+                workflow_run_id = workflow_run_object["id"]
+
+            print(f"Fetching artifact information for workflow id '{workflow_run_id}'.")
+            artifact_json = UtilHelpers.get_artifact_object_from_workflow_run_object(
+                workflow_run_object, "my-artifact"
+            )
+            UtilHelpers.url_open_binary(artifact_json["archive_download_url"])

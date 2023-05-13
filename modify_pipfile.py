@@ -1,7 +1,3 @@
-
-
-
-import os
 import sys
 
 current_python_version = sys.version
