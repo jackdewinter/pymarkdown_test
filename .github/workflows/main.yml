@@ -147,8 +147,10 @@ jobs:
           pipenv uninstall pytest-html
 
       - name: Display
+        env:
+          JSON: ${{ toJson(github.event) }}
         run: |
-          echo "${{ toJson(github.event) }}"
+          echo $JSON
 
       - name: Get Run ID From Event Information
         if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
@@ -156,8 +158,9 @@ jobs:
           echo "REMOTE_RUN_ID=${{ github.event.client_payload.run_id }}" >> $GITHUB_ENV
 
       - name: Execute Tests
+        env:
+          GITHUB_ACCESS_TOKEN: ${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          REMOTE_RUN_ID: ${{ env.REMOTE_RUN_ID}}
         run: |
-          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-          export REMOTE_RUN_ID=${{ env.REMOTE_RUN_ID}}
           echo "REMOTE_RUN_ID=$REMOTE_RUN_ID"
           pipenv run pytest --durations=0 --capture=tee-sys -m packages
