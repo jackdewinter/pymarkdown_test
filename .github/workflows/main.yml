@@ -63,7 +63,7 @@ jobs:
     name: Pre-Commit Tests
     strategy:
       matrix:
-        python: ["3.8", "3.9"]
+        python: ["3.10"]
         platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 10
@@ -95,7 +95,7 @@ jobs:
 
       - name: Display
         run: |
-          echo "${{ github.event }}"
+          echo "${{ toJson(github.event) }}"
 
       - name: Get Hash From Event Information
         if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
@@ -105,16 +105,17 @@ jobs:
       - name: Execute Tests
         run: |
           echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
-          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-          export REMOTE_SHA=${{ env.REMOTE_SHA }}
+          GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          REMOTE_SHA=${{ env.REMOTE_SHA }}
+          echo "REMOTE_SHA=$REMOTE_SHA"
           pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
 
-  install-tests:
+  install-package-tests:
 
     name: Install Package Tests
     strategy:
       matrix:
-        python: ["3.8", "3.9"]
+        python: ["3.10"]
         platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 10
@@ -148,18 +149,9 @@ jobs:
         run: |
           echo "REMOTE_RUN_ID=${{ github.event.client_payload.run_id }}" >> $GITHUB_ENV
 
-      # - name: Download artifact
-      #   id: download-artifact
-      #   uses: dawidd6/action-download-artifact@v2
-      #   with:
-      #     name: my-artifact
-      #     github_token: ${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-      #     repo: jackdewinter/pymarkdown
-      #     run_id: ${{ env.REMOTE_RUN_ID }}
-      #     workflow_conclusion: success
-      #     path: ${{github.workspace}}/packages
-
       - name: Execute Tests
         run: |
-          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          REMOTE_RUN_ID=${{ env.REMOTE_RUN_ID}}
+          echo "REMOTE_RUN_ID=$REMOTE_RUN_ID"
           pipenv run pytest --durations=0 --capture=tee-sys -m packages

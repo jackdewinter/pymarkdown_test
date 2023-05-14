@@ -61,6 +61,13 @@ class UtilHelpers:
     __package_extension = ".tar.gz"
 
     @staticmethod
+    def get_python_version() -> str:
+        current_python_version = sys.version
+        index = current_python_version.index("(")
+        current_python_version = current_python_version[:index].strip()
+        return current_python_version
+
+    @staticmethod
     def __get_github_key_token_from_environment() -> Optional[str]:
         """
         Query the environment for a access token to use.
@@ -305,9 +312,7 @@ class UtilHelpers:
         Create a pipenv lock file.
         """
 
-        current_python_version = sys.version
-        index = current_python_version.index("(")
-        current_python_version = current_python_version[:index].strip()
+        current_python_version = UtilHelpers.get_python_version()
 
         command_result = subprocess.run(
             [
