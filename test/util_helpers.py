@@ -62,6 +62,9 @@ class UtilHelpers:
 
     @staticmethod
     def get_python_version() -> str:
+        """
+        Get a cleaned up python version.
+        """
         current_python_version = sys.version
         index = current_python_version.index("(")
         current_python_version = current_python_version[:index].strip()

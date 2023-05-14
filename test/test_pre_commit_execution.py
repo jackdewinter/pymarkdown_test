@@ -15,6 +15,8 @@ def test_pre_commit_one() -> None:  # sourcery skip: extract-method
     Test to make sure that PyMarkdown can be invoked through Pre-Commit.
     """
 
+    print(os.environ.copy())
+
     # Arrange
     branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:

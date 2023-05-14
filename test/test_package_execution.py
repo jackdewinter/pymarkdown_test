@@ -1,14 +1,16 @@
 """
 Tests to apply the pre-commit hook invocation of PyMarkdown.
 """
+import os
 import tempfile
+from typing import List
 
 import pytest
 
 from .util_helpers import UtilHelpers
 
 
-def __xx(expected_output_lines):
+def __xx(expected_output_lines: List[str]) -> None:
     if UtilHelpers.get_python_version().startswith("3.10."):
         k = next(
             (
@@ -27,6 +29,8 @@ def test_package_one() -> None:
     """
     Test to make sure that we can install the package and run it without any arguments.
     """
+
+    print(os.environ.copy())
 
     # Arrange
     UtilHelpers.assert_pymarkdown_install_package_present()

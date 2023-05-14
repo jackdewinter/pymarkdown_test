@@ -105,8 +105,8 @@ jobs:
       - name: Execute Tests
         run: |
           echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
-          GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-          REMOTE_SHA=${{ env.REMOTE_SHA }}
+          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          export REMOTE_SHA=${{ env.REMOTE_SHA }}
           echo "REMOTE_SHA=$REMOTE_SHA"
           pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
 
@@ -144,6 +144,10 @@ jobs:
           pipenv sync
           pipenv uninstall pytest-html
 
+      - name: Display
+        run: |
+          echo "${{ toJson(github.event) }}"
+
       - name: Get Run ID From Event Information
         if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
         run: |
@@ -151,7 +155,7 @@ jobs:
 
       - name: Execute Tests
         run: |
-          GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-          REMOTE_RUN_ID=${{ env.REMOTE_RUN_ID}}
+          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          export REMOTE_RUN_ID=${{ env.REMOTE_RUN_ID}}
           echo "REMOTE_RUN_ID=$REMOTE_RUN_ID"
           pipenv run pytest --durations=0 --capture=tee-sys -m packages
