@@ -1,6 +1,7 @@
 """
 Tests to apply the pre-commit hook invocation of PyMarkdown.
 """
+import os
 import tempfile
 from typing import List
 
@@ -28,6 +29,8 @@ def test_package_one() -> None:
     """
     Test to make sure that we can install the package and run it without any arguments.
     """
+
+    print(os.environ.copy())
 
     # Arrange
     UtilHelpers.assert_pymarkdown_install_package_present()
