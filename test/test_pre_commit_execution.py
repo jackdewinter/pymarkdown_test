@@ -18,7 +18,7 @@ def test_pre_commit_one() -> None:  # sourcery skip: extract-method
     # Arrange
     branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:
-        UtilHelpers.copy_test_resource_to_test_directory(
+        UtilHelpers.copy_test_resource_directory_to_test_directory(
             "pre_commit_test_one", temporary_directory
         )
         UtilHelpers.localize_precommit_configuration(temporary_directory, branch_hash)
@@ -41,7 +41,7 @@ def test_pre_commit_two() -> None:  # sourcery skip: extract-method
     # Arrange
     branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:
-        UtilHelpers.copy_test_resource_to_test_directory(
+        UtilHelpers.copy_test_resource_directory_to_test_directory(
             "pre_commit_test_two", temporary_directory
         )
         UtilHelpers.localize_precommit_configuration(temporary_directory, branch_hash)
@@ -71,7 +71,7 @@ def test_pre_commit_three() -> None:  # sourcery skip: extract-method
     # Arrange
     branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:
-        UtilHelpers.copy_test_resource_to_test_directory(
+        UtilHelpers.copy_test_resource_directory_to_test_directory(
             "pre_commit_test_three", temporary_directory
         )
         UtilHelpers.localize_precommit_configuration(temporary_directory, branch_hash)
@@ -95,7 +95,7 @@ def test_pre_commit_four() -> None:  # sourcery skip: extract-method
     # Arrange
     branch_hash = UtilHelpers.calculate_branch_hash()
     with tempfile.TemporaryDirectory() as temporary_directory:
-        UtilHelpers.copy_test_resource_to_test_directory(
+        UtilHelpers.copy_test_resource_directory_to_test_directory(
             "pre_commit_test_four", temporary_directory
         )
         UtilHelpers.localize_precommit_configuration(temporary_directory, branch_hash)

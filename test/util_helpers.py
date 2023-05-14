@@ -8,8 +8,9 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import zipfile
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Tuple, cast
 from urllib.request import Request, urlopen
 
 
@@ -60,7 +61,7 @@ class UtilHelpers:
     __package_extension = ".tar.gz"
 
     @staticmethod
-    def get_github_key_token_from_environment() -> Optional[str]:
+    def __get_github_key_token_from_environment() -> Optional[str]:
         """
         Query the environment for a access token to use.
         """
@@ -110,7 +111,7 @@ class UtilHelpers:
         req = Request(url_to_open)
         req.add_header(
             "Authorization",
-            f"token {UtilHelpers.get_github_key_token_from_environment()}",
+            f"token {UtilHelpers.__get_github_key_token_from_environment()}",
         )
         with urlopen(req) as response:
             json_object = json.loads(response.read().decode("utf-8"))
@@ -129,7 +130,7 @@ class UtilHelpers:
         req = Request(url_to_open)
         req.add_header(
             "Authorization",
-            f"token {UtilHelpers.get_github_key_token_from_environment()}",
+            f"token {UtilHelpers.__get_github_key_token_from_environment()}",
         )
         with urlopen(req) as response, open(zip_file_download_path, "wb") as out_file:
             shutil.copyfileobj(response, out_file)
@@ -153,7 +154,7 @@ class UtilHelpers:
             print(
                 f"Calculating hash '{branch_hash}' from last workflow run of default branch."
             )
-            if not UtilHelpers.get_github_key_token_from_environment():
+            if not UtilHelpers.__get_github_key_token_from_environment():
                 assert False, "GitHub Personal Access Token not provided."
 
             def_branch = UtilHelpers.__get_default_branch()
@@ -229,21 +230,6 @@ class UtilHelpers:
             output_file.writelines(modified_lines)
 
     @staticmethod
-    def copy_test_resource_to_test_directory(
-        test_name: str, destination_directory: str
-    ) -> None:
-        """
-        Copy the directory from the resources to a new test directory.
-        """
-
-        source_directory = os.path.join(os.getcwd(), "test", "resources", test_name)
-        shutil.copytree(source_directory, destination_directory, dirs_exist_ok=True)
-
-        print(
-            f"Copied directory from '{source_directory}' to '{destination_directory}'."
-        )
-
-    @staticmethod
     def __make_value_visible(value_to_modify: Any) -> str:
         """
         For the given value, turn it into a string if necessary, and then replace
@@ -258,27 +244,46 @@ class UtilHelpers:
         )
 
     @staticmethod
+    def __find_line_differences(
+        expected_text_lines: List[str], actual_text_lines: List[str]
+    ) -> Tuple[bool, List[str]]:
+        line_differences = list(difflib.ndiff(expected_text_lines, actual_text_lines))
+        return (
+            any(
+                (
+                    next_possible_difference.startswith("?")
+                    or next_possible_difference.startswith("+")
+                    or next_possible_difference.startswith("-")
+                )
+                for next_possible_difference in line_differences
+            ),
+            line_differences,
+        )
+
+    @staticmethod
     def compare_actual_output_versus_expected_output(
         stream_name: str,
         actual_text_lines: List[str],
         expected_text_lines: List[str],
-        log_extra: Optional[str] = None,
+        windows_output_lines: Optional[List[str]] = None,
     ) -> None:
         """
         Do a thorough comparison of the actual stream against the expected text.
         """
 
-        line_differences = list(difflib.ndiff(expected_text_lines, actual_text_lines))
-        has_one_line_difference = any(
-            (
-                next_possible_difference.startswith("?")
-                or next_possible_difference.startswith("+")
-                or next_possible_difference.startswith("-")
-            )
-            for next_possible_difference in line_differences
+        print("Comparing expected against differences.")
+        was_one_different, line_differences = UtilHelpers.__find_line_differences(
+            expected_text_lines, actual_text_lines
         )
-        if not has_one_line_difference:
+        if not was_one_different:
             return
+        if windows_output_lines and sys.platform.startswith("win"):
+            print("Comparing expected against windows differences.")
+            was_one_different, line_differences = UtilHelpers.__find_line_differences(
+                windows_output_lines, actual_text_lines
+            )
+            if not was_one_different:
+                return
 
         # print("==========")
         # for i,j in enumerate(line_differences):
@@ -292,8 +297,6 @@ class UtilHelpers:
 
         print(f"WARN>actual>>{UtilHelpers.__make_value_visible(actual_text_lines)}")
         print(f"WARN>expect>>{UtilHelpers.__make_value_visible(expected_text_lines)}")
-        if log_extra:
-            print(f"log_extra:{log_extra}")
         raise AssertionError(f"{stream_name} not as expected:\n{diff_values}")
 
     @staticmethod
@@ -302,11 +305,15 @@ class UtilHelpers:
         Create a pipenv lock file.
         """
 
+        current_python_version = sys.version
+        index = current_python_version.index("(")
+        current_python_version = current_python_version[:index].strip()
+
         command_result = subprocess.run(
             [
                 "pipenv",
                 "--python",
-                "3.8",
+                current_python_version,
                 "lock",
             ],
             stdout=subprocess.PIPE,
@@ -398,7 +405,7 @@ class UtilHelpers:
         return Bob(command_result.returncode, std_out, std_error)
 
     @staticmethod
-    def search_for_eligible_packages_to_install() -> List[str]:
+    def __search_for_eligible_packages_to_install() -> List[str]:
         """
         Search in the local "packages" directory for pip install packages.
         """
@@ -426,7 +433,7 @@ class UtilHelpers:
         In the packages directory, there should be one-and-only-one tar file.
         """
 
-        files = UtilHelpers.search_for_eligible_packages_to_install()
+        files = UtilHelpers.__search_for_eligible_packages_to_install()
         packages_path = UtilHelpers.get_packages_path()
         assert len(files) == 1, (
             f"Only one file matching {UtilHelpers.__package_extension} should exist "
@@ -435,33 +442,36 @@ class UtilHelpers:
         return os.path.join(packages_path, files[0])
 
     @staticmethod
-    def install_pymarkdown_in_fresh_environment(
-        directory_to_install_in: str,
-    ) -> Dict[str, str]:
+    def copy_test_resource_file_to_test_directory(
+        test_name: str, file_name: str, destination_directory: str
+    ) -> None:
         """
-        In the provided directory, initialize PipEnv and install the one and only
-        one package located in the packages directory.
+        Copy the directory from the resources to a new test directory.
         """
 
-        only_package_path = UtilHelpers.__get_only_package_to_install()
+        source_directory = os.path.join(os.getcwd(), "test", "resources", test_name)
+        source_path = os.path.join(source_directory, file_name)
+        destination_path = os.path.join(destination_directory, file_name)
+        shutil.copyfile(source_path, destination_path)
 
-        environment_dict = dict(os.environ.copy(), **{"PIPENV_VENV_IN_PROJECT": "1"})
-
-        bob_lock = UtilHelpers.__run_pipenv_lock(
-            directory_to_install_in, environment_dict
+        print(
+            f"Copied file '{file_name}' from '{source_directory}' to '{destination_directory}'."
         )
-        assert bob_lock.return_code == 0
 
-        bob_sync = UtilHelpers.__run_pipenv_sync(
-            directory_to_install_in, environment_dict
-        )
-        assert bob_sync.return_code == 0
+    @staticmethod
+    def copy_test_resource_directory_to_test_directory(
+        test_name: str, destination_directory: str
+    ) -> None:
+        """
+        Copy the directory from the resources to a new test directory.
+        """
 
-        bob_sync = UtilHelpers.__run_pipenv_install(
-            directory_to_install_in, environment_dict, only_package_path
+        source_directory = os.path.join(os.getcwd(), "test", "resources", test_name)
+        shutil.copytree(source_directory, destination_directory, dirs_exist_ok=True)
+
+        print(
+            f"Copied directory from '{source_directory}' to '{destination_directory}'."
         )
-        assert bob_sync.return_code == 0
-        return environment_dict
 
     @staticmethod
     def load_templated_output(test_name: str, template_file: str) -> List[str]:
@@ -598,3 +608,73 @@ class UtilHelpers:
         assert branch_hash is not None
         print(f"  Default Branch Hash: {branch_hash}")
         return branch_hash
+
+    @staticmethod
+    def install_pymarkdown_in_fresh_environment(
+        directory_to_install_in: str,
+    ) -> Dict[str, str]:
+        """
+        In the provided directory, initialize PipEnv and install the one and only
+        one package located in the packages directory.
+        """
+
+        only_package_path = UtilHelpers.__get_only_package_to_install()
+
+        environment_dict = dict(os.environ.copy(), **{"PIPENV_VENV_IN_PROJECT": "1"})
+
+        bob_lock = UtilHelpers.__run_pipenv_lock(
+            directory_to_install_in, environment_dict
+        )
+        assert bob_lock.return_code == 0
+
+        bob_sync = UtilHelpers.__run_pipenv_sync(
+            directory_to_install_in, environment_dict
+        )
+        assert bob_sync.return_code == 0
+
+        bob_sync = UtilHelpers.__run_pipenv_install(
+            directory_to_install_in, environment_dict, only_package_path
+        )
+        assert bob_sync.return_code == 0
+        return environment_dict
+
+    @staticmethod
+    def assert_pymarkdown_install_package_present() -> None:
+        """
+        Assert that a pymarkdown package is present and that it is installed.
+        """
+
+        eligible_package_list = UtilHelpers.__search_for_eligible_packages_to_install()
+        if len(eligible_package_list) != 0:
+            print(f"Eligible package to install found: {eligible_package_list[0]}")
+            return
+
+        if not UtilHelpers.__get_github_key_token_from_environment():
+            assert False, "GitHub Personal Access Token not provided."
+        else:
+            print("Did not find eligible package to install.")
+            if not os.path.exists(UtilHelpers.get_packages_path()):
+                print("Creating packages directory to hold artifacts.")
+                os.mkdir(UtilHelpers.get_packages_path())
+
+            workflow_run_id = UtilHelpers.get_workflow_run_id_from_environment()
+            if workflow_run_id:
+                print(f"Fetching specified workflow run id '{workflow_run_id}'.")
+                workflow_run_object = UtilHelpers.get_workflow_run_object_from_run_id(
+                    workflow_run_id
+                )
+            else:
+                print("Determining last respective workflow run id.")
+                workflow_id = UtilHelpers.get_workflow_id_for_workflow_path("main.yml")
+                workflow_run_object = (
+                    UtilHelpers.find_workflow_run_object_from_workflow_id(
+                        workflow_id, "main"
+                    )
+                )
+                workflow_run_id = workflow_run_object["id"]
+
+            print(f"Fetching artifact information for workflow id '{workflow_run_id}'.")
+            artifact_json = UtilHelpers.get_artifact_object_from_workflow_run_object(
+                workflow_run_object, "my-artifact"
+            )
+            UtilHelpers.url_open_binary(artifact_json["archive_download_url"])

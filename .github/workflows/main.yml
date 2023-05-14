@@ -63,12 +63,13 @@ jobs:
     name: Pre-Commit Tests
     strategy:
       matrix:
-        # python: ["3.8", "3.9", "3.10"]
-        # platform: [windows-latest, ubuntu-latest, macos-latest]
-        python: ["3.8"]
-        platform: [ubuntu-latest]
+        python: ["3.8", "3.9"]
+        platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
-    timeout-minutes: 5
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
 
     steps:
 
@@ -86,10 +87,15 @@ jobs:
 
       - name: Sync With Repository
         run: |
+          python modify_pipfile.py
           pipenv lock
           pipenv sync
           pipenv uninstall pytest-html
           pipenv graph
+
+      - name: Display
+        run: |
+          echo "${{ github.event }}"
 
       - name: Get Hash From Event Information
         if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
@@ -100,6 +106,7 @@ jobs:
         run: |
           echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
           export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          export REMOTE_SHA=${{ env.REMOTE_SHA }}
           pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
 
   install-tests:
@@ -107,11 +114,13 @@ jobs:
     name: Install Package Tests
     strategy:
       matrix:
-        # python: ["3.8", "3.9", "3.10"]
-        python: ["3.8"]
-        platform: [ubuntu-latest]
+        python: ["3.8", "3.9"]
+        platform: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
-    timeout-minutes: 5
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
 
     steps:
 
@@ -129,6 +138,7 @@ jobs:
 
       - name: Sync With Repository
         run: |
+          python modify_pipfile.py
           pipenv lock
           pipenv sync
           pipenv uninstall pytest-html
