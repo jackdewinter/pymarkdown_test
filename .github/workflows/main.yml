@@ -5,7 +5,7 @@ on:
     branches:
       - main
   repository_dispatch:
-  workflow_display:
+  workflow_dispatch:
 
 env:
   default-python-version: 3.8
