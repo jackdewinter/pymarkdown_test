@@ -94,8 +94,10 @@ jobs:
           pipenv graph
 
       - name: Display
+        env:
+          JSON: ${{ toJson(github.event) }}
         run: |
-          echo "${{ toJson(github.event) }}"
+          echo $JSON
 
       - name: Get Hash From Event Information
         if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
@@ -103,11 +105,11 @@ jobs:
           echo "REMOTE_SHA=${{ github.event.client_payload.sha }}" >> $GITHUB_ENV
 
       - name: Execute Tests
+        env:
+          GITHUB_ACCESS_TOKEN: ${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
+          REMOTE_SHA: ${{ env.REMOTE_SHA }}
         run: |
-          echo "Running tests with hash '${{ env.REMOTE_SHA }}'."
-          export GITHUB_ACCESS_TOKEN=${{ secrets.INTER_PROJECT_ACCESS_TOKEN }}
-          export REMOTE_SHA=${{ env.REMOTE_SHA }}
-          echo "REMOTE_SHA=$REMOTE_SHA"
+          echo "Running tests with hash '$REMOTE_SHA'."
           pipenv run pytest --durations=0 --capture=tee-sys -m pre_commit
 
   install-package-tests:
