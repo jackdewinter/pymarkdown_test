@@ -1,13 +1,11 @@
 name: Main
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
   repository_dispatch:
+  workflow_dispatch:
 
 env:
   default-python-version: 3.8
@@ -93,11 +91,11 @@ jobs:
           pipenv uninstall pytest-html
           pipenv graph
 
-      - name: Display
-        env:
-          JSON: ${{ toJson(github.event) }}
-        run: |
-          echo $JSON
+      # - name: Display
+      #   env:
+      #     JSON: ${{ toJson(github.event) }}
+      #   run: |
+      #     echo $JSON
 
       - name: Get Hash From Event Information
         if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
@@ -146,11 +144,11 @@ jobs:
           pipenv sync
           pipenv uninstall pytest-html
 
-      - name: Display
-        env:
-          JSON: ${{ toJson(github.event) }}
-        run: |
-          echo $JSON
+      # - name: Display
+      #   env:
+      #     JSON: ${{ toJson(github.event) }}
+      #   run: |
+      #     echo $JSON
 
       - name: Get Run ID From Event Information
         if: github.event.action == 'request-integration' && github.event.client_payload.repository == 'jackdewinter/pymarkdown'
