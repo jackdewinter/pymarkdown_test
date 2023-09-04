@@ -66,13 +66,12 @@ if defined PTEST_KEYWORD (
 ) else (
 	echo {Executing full test suite...}
 )
-set TEST_EXECUTION_FAILED=
 if not defined PTEST_QUIET_MODE (
 	pipenv run pytest --durations=0 --capture=tee-sys %PYTEST_ARGS% %PTEST_KEYWORD%
 	if ERRORLEVEL 1 (
 		echo.
 		echo {Executing test suite failed.}
-		set TEST_EXECUTION_FAILED=1
+		goto error_end
 	)
 ) else (
 	pipenv run pytest --durations=0 --capture=tee-sys %PYTEST_ARGS% %PTEST_KEYWORD% > %PTEST_TEMPFILE% 2>&1
@@ -80,17 +79,13 @@ if not defined PTEST_QUIET_MODE (
 		type %PTEST_TEMPFILE%
 		echo.
 		echo {Executing test suite failed.}
-		set TEST_EXECUTION_FAILED=1
+		goto error_end
 	)
 )
 
 if defined PTEST_KEYWORD (
 	echo {Execution of partial test suite succeeded.}
 	goto success_end
-)
-
-if defined TEST_EXECUTION_FAILED (
-	goto error_end
 )
 
 echo {Execution of full test suite succeeded.}
@@ -108,4 +103,5 @@ set PC_EXIT_CODE=1
 :real_end
 erase /f /q %PTEST_TEMPFILE% > nul 2>&1
 popd
+echo "%PC_EXIT_CODE%"
 exit /B %PC_EXIT_CODE%

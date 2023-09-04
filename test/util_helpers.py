@@ -161,9 +161,7 @@ class UtilHelpers:
         if branch_hash:
             print(f"Using hash '{branch_hash}' from environment.")
         else:
-            print(
-                f"Calculating hash '{branch_hash}' from last workflow run of default branch."
-            )
+            print(                "Calculating hash from last workflow run of default branch."            )
             if not UtilHelpers.__get_github_key_token_from_environment():
                 assert False, "GitHub Personal Access Token not provided."
 
@@ -232,6 +230,7 @@ class UtilHelpers:
         """
 
         file_path = ".pre-commit-config.yaml"
+        print(f"Replacing hash in '{file_path}' with '{branch_hash}'.")
         file_path = os.path.join(destination_directory, file_path)
         with open(file_path, "rt", encoding="utf-8") as input_file:
             all_lines = input_file.readlines()
@@ -627,6 +626,7 @@ class UtilHelpers:
         """
 
         only_package_path = UtilHelpers.__get_only_package_to_install()
+        print(f"Package to install: {only_package_path}")
 
         environment_dict = dict(os.environ.copy(), **{"PIPENV_VENV_IN_PROJECT": "1"})
 
@@ -639,6 +639,9 @@ class UtilHelpers:
             directory_to_install_in, environment_dict
         )
         assert bob_sync.return_code == 0
+
+        xx = os.listdir(directory_to_install_in)
+        print(xx)
 
         bob_sync = UtilHelpers.__run_pipenv_install(
             directory_to_install_in, environment_dict, only_package_path
