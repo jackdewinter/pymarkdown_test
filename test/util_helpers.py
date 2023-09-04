@@ -640,9 +640,6 @@ class UtilHelpers:
         )
         assert bob_sync.return_code == 0
 
-        xx = os.listdir(directory_to_install_in)
-        print(xx)
-
         bob_sync = UtilHelpers.__run_pipenv_install(
             directory_to_install_in, environment_dict, only_package_path
         )
