@@ -395,6 +395,7 @@ class UtilHelpers:
         """
 
         pipenv_run_arguments = ["pipenv", "run", *run_arguments]
+        print(f"Arguments: {pipenv_run_arguments}")
         command_result = subprocess.run(
             pipenv_run_arguments,
             stdout=subprocess.PIPE,
