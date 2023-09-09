@@ -50,6 +50,12 @@ def test_package_one() -> None:
             temporary_directory
         )
 
+        pipenv_arguments = ["pymarkdown","version"]
+        bob_sync = UtilHelpers.run_pipenv_run(
+            temporary_directory, execution_environment, pipenv_arguments
+        )
+        print(f"Version: {bob_sync.std_out}")
+
         pipenv_arguments = ["pymarkdown"]
 
         # Act
@@ -86,6 +92,12 @@ def test_package_two() -> None:
         execution_environment = UtilHelpers.install_pymarkdown_in_fresh_environment(
             temporary_directory
         )
+
+        pipenv_arguments = ["pymarkdown","version"]
+        bob_sync = UtilHelpers.run_pipenv_run(
+            temporary_directory, execution_environment, pipenv_arguments
+        )
+        print(f"Version: {bob_sync.std_out}")
 
         pipenv_arguments = ["pymarkdown", "scan", "test.md"]
 

@@ -3,6 +3,7 @@ usage: pymarkdown [-h] [-e ENABLE_RULES] [-d DISABLE_RULES]
                   [--set SET_CONFIGURATION] [--strict-config] [--stack-trace]
                   [--log-level {CRITICAL,ERROR,WARNING,INFO,DEBUG}]
                   [--log-file LOG_FILE]
+                  [--return-code-scheme {default,minimal}]
                   {plugins,extensions,scan,scan-stdin,version} ...
 
 Lint any found Markdown files.
@@ -34,3 +35,6 @@ optional arguments:
   --log-level {CRITICAL,ERROR,WARNING,INFO,DEBUG}
                         minimum level required to log messages
   --log-file LOG_FILE   destination file for log messages
+  --return-code-scheme {default,minimal}
+                        scheme to choose for selecting the application return
+                        code
