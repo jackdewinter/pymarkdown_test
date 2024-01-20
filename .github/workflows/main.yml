@@ -20,7 +20,7 @@ jobs:
     steps:
 
       - name: Checkout Repository
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
 
       - name: Setup Python ${{ env.default-python-version }}
         uses: actions/setup-python@v4.5.0
@@ -72,7 +72,7 @@ jobs:
     steps:
 
       - name: Checkout Repository
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
 
       - name: Setup Python ${{ matrix.python }}
         uses: actions/setup-python@v4.5.0
@@ -126,7 +126,7 @@ jobs:
     steps:
 
       - name: Checkout Repository
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
 
       - name: Setup Python ${{ matrix.python }}
         uses: actions/setup-python@v4.5.0
